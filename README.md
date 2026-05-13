@@ -32,6 +32,17 @@ go build -ldflags "-s -w -H windowsgui" -o snap8.exe
 
 実行はビルドした `snap8.exe` をダブルクリック / コマンド / ショートカットから。`snap8.json` は exe と同じフォルダに置いてください（無くても既定値で動きます）。
 
+### アイコン
+
+exe のアイコン（エクスプローラ／タスクバー／Alt+Tab に出る図）はリポジトリ同梱の `rsrc_windows_amd64.syso` に入っていて、`go build` が自動でリンクします（外部ツール不要）。差し替えたいときは `gen_icon.go` の図形・色を編集して再生成してください:
+
+```powershell
+go generate ./...   # = go run gen_icon.go : snap8.ico と rsrc_windows_amd64.syso を作り直す
+go build -ldflags "-s -w -H windowsgui" -o snap8.exe
+```
+
+`gen_icon.go` は標準ライブラリだけで `.ico` と COFF リソースオブジェクト（`.syso`）を生成します（ImageMagick や windres、追加モジュールは不要）。
+
 ## 設定（`snap8.json`）
 
 exe と同じフォルダの `snap8.json` を実行のたびに読みます（無ければ内蔵の既定値。不正な値・壊れた JSON はその項目だけ既定値に戻します）。
@@ -72,3 +83,6 @@ exe と同じフォルダの `snap8.json` を実行のたびに読みます（�
 | `win32.go` | Win32 API バインディング（`syscall.NewLazyDLL`）と構造体・ヘルパー |
 | `arrange.go` | ウィンドウ列挙＋セル計算＋移動（コアロジック） |
 | `snap8.json` | 既定設定ファイル |
+| `gen_icon.go` | アイコン生成ツール（`//go:build ignore`。標準ライブラリのみで `snap8.ico` と `rsrc_windows_amd64.syso` を作る） |
+| `rsrc_windows_amd64.syso` | exe に埋め込まれるアイコンリソース（`go build` が自動リンク） |
+| `snap8.ico` | 同じアイコンの `.ico` ファイル（ショートカット等で使う用） |

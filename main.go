@@ -4,6 +4,8 @@
 // Rows x Cols grid (default 2x4 = 8 cells) of the target monitor, then exits.
 package main
 
+//go:generate go run gen_icon.go
+
 import (
 	"encoding/json"
 	"os"

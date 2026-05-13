@@ -17,6 +17,9 @@ Go 製のウィンドウ整列アプリ **snap8** を作成。
 | `win32.go` | Win32 API バインディング（`syscall.NewLazyDLL` 経由）、`rect`/`point`/`monitorInfo` 等の構造体とヘルパー（UTF-16 文字列、POINT 値渡しのパック等） |
 | `arrange.go` | Alt+Tab相当のウィンドウをZオーダーで列挙→対象モニターをRows×Colsに等分→先頭8個を各セルへ移動（DWM拡張フレーム境界で見た目を補正） |
 | `snap8.json` | 既定設定（Rows / Cols / Gap / UseWorkArea / TargetMonitor / RestoreMinimized） |
+| `gen_icon.go` | アイコン生成ツール（`//go:build ignore`）。標準ライブラリのみで `snap8.ico` と COFF リソースオブジェクト `rsrc_windows_amd64.syso` を出力。`go generate ./...` で再生成 |
+| `rsrc_windows_amd64.syso` | exe 埋め込み用アイコンリソース（`go build` が自動リンク → エクスプローラ／タスクバー／Alt+Tab に表示） |
+| `snap8.ico` | 同じアイコンの `.ico` ファイル |
 | `README.md` / `.gitignore` | 説明書 / 無視設定 |
 
 ## ビルド
@@ -37,12 +40,14 @@ go build -ldflags "-s -w -H windowsgui" -o snap8.exe
 - `MonitorFromPoint` は `POINT` を値渡し → amd64 では 8 バイトを 1 レジスタに詰めて渡す（`packPoint`）。
 - 64-bit 専用（`GetWindowLongPtrW`）。
 - JSON は標準 `encoding/json`（コメント非対応のため `snap8.json` はコメントなしの素の JSON）。`*bool` フィールドで「未指定なら true」を表現。
+- アイコン: `gen_icon.go` が「青いパネル＋白いウィンドウ 8 枚を 2×4 配置」の図を 16〜256px で描画（4倍スーパーサンプル→ボックス縮小）。各サイズを PNG にして、(1) `.ico` ファイルと、(2) `RT_ICON`／`RT_GROUP_ICON` を持つ `.rsrc` セクション 1 個＋`IMAGE_REL_AMD64_ADDR32NB` リロケーションから成る COFF オブジェクト（`rsrc_windows_amd64.syso`）を手書きで生成。Go ツールチェインは `*.syso` を自動でリンクするので追加の依存・ツールは不要。PNG 圧縮アイコンは Vista 以降のみ対応だが snap8 は元々 Win10/11 専用。
 
 ## 確認したこと
 
 - Go 1.26.3 を導入（`winget install GoLang.Go`）
 - `go vet ./...` → 指摘なし、`go build -ldflags "-s -w -H windowsgui" -o snap8.exe` → 成功（約 2.2 MB の静的 exe）
 - `snap8.exe` 実行 → ウィンドウが 2x4 に整列・即終了・残存プロセスなし・終了コード 0 ✓（実機で確認）
+- アイコン: `go run gen_icon.go` → `snap8.ico` / `rsrc_windows_amd64.syso` 生成、`go build` で exe に `.rsrc`（8400 B）がリンクされることを `debug/pe` で確認。`ExtractIconEx`／`ExtractAssociatedIcon` でアイコンが取り出せることを確認 ✓
 
 ## 注意点（README にも記載）
 
